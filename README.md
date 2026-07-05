@@ -2,6 +2,13 @@
 
 **Composable blends of model predictive control and reinforcement learning for robotics.**
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/residual_pendulum_dark.png">
+  <img alt="Learning curves on Pendulum-v1 with 40% mass mismatch. Residual SAC over MPC starts at return -738, near the MPC baseline of -629, improves past it from 2k steps and reaches -273 — never entering the catastrophic range. SAC from scratch spends its first 2,500 steps near -1450 before converging to -236." src="media/residual_pendulum_light.png">
+</picture>
+
+*Model mismatch benchmark ([reproduce it](benchmark/residual_pendulum/)): the plant is 40% heavier than the MPC's model. The residual agent starts where MPC ends and never passes through the catastrophic exploration phase that from-scratch RL pays for.*
+
 Recent robotics research keeps combining MPC and RL in the same handful of ways — yet every paper reimplements them from scratch. `blendmpc` packages these patterns as small, composable modules over [Gymnasium](https://gymnasium.farama.org/) and standard trajectory-optimization backends (currently [Crocoddyl](https://github.com/loco-3d/crocoddyl)):
 
 | Blend | Pattern | Literature |
@@ -58,7 +65,7 @@ Backends implement `solve()`; blends only see the interface. Adding an acados or
 ## Roadmap
 
 - [x] v0.1 — core interface, Crocoddyl backend, 4 blends, pendulum demo + tests
-- [ ] Residual SAC training example (Stable-Baselines3) with learning curves vs pure MPC / pure RL
+- [x] Residual SAC benchmark (Stable-Baselines3) with learning curves vs pure MPC / pure RL under model mismatch
 - [ ] acados backend
 - [ ] MuJoCo quadruped task (torque-limited locomotion)
 - [ ] Benchmark table: pure MPC vs pure RL vs each blend, wall-clock and sample efficiency

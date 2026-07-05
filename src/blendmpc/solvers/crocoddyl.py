@@ -23,7 +23,19 @@ class CrocoddylMPC(MPCPolicy):
         Crocoddyl solver class (default ``SolverBoxFDDP`` so control limits
         declared on the action models are honored).
     max_iter / max_iter_first:
-        Solver iterations for warm-started steps and for the cold first solve.
+        Solver iterations for warm-started steps and for cold solves.
+    u_init:
+        Constant control used to initialize cold solves (default zeros).
+        A small nonzero value breaks the symmetry of stationary states —
+        e.g. a hanging pendulum, where a zero rollout is a stationary point
+        of the OCP and DDP declares convergence without moving.
+    multistart_iter:
+        If > 0, every warm-started solve *also* attempts a cold solve with
+        this iteration budget, and the lower-cost candidate wins. This guards
+        receding-horizon MPC against a failure mode where warm starts trap
+        the solver in a poor local basin found on the first step: once a
+        "lazy" solution is shifted forward, a handful of iterations per step
+        can never escape it. Set to 0 to disable.
     """
 
     def __init__(
@@ -32,14 +44,37 @@ class CrocoddylMPC(MPCPolicy):
         solver_cls=crocoddyl.SolverBoxFDDP,
         max_iter: int = 5,
         max_iter_first: int = 100,
+        u_init: np.ndarray | None = None,
+        multistart_iter: int = 0,
     ) -> None:
         super().__init__()
         self._factory = problem_factory
         self._solver_cls = solver_cls
         self._max_iter = max_iter
         self._max_iter_first = max_iter_first
+        self._u_init = u_init
+        self._multistart_iter = multistart_iter
         self._problem = None
         self._solver = None
+
+    def _cold_init(self, x0: np.ndarray):
+        T = self._problem.T
+        if self._u_init is None:
+            us = [np.zeros(m.nu) for m in self._problem.runningModels]
+        else:
+            u0 = np.asarray(self._u_init, dtype=float)
+            us = [u0.copy() for _ in range(T)]
+        return [x0] * (T + 1), us
+
+    def _attempt(self, xs_init, us_init, maxiter: int) -> MPCSolution:
+        solved = self._solver.solve(list(xs_init), list(us_init), maxiter, False)
+        return MPCSolution(
+            xs=[np.asarray(x) for x in self._solver.xs],
+            us=[np.asarray(u) for u in self._solver.us],
+            cost=self._solver.cost,
+            solved=solved,
+            info={"iter": self._solver.iter},
+        )
 
     def solve(
         self,
@@ -53,20 +88,18 @@ class CrocoddylMPC(MPCPolicy):
             self._solver = self._solver_cls(self._problem)
         self._problem.x0 = x0
 
-        T = self._problem.T
-        cold = us_init is None
-        if cold:
-            us_init = [np.zeros(m.nu) for m in self._problem.runningModels]
-            xs_init = [x0] * (T + 1)
-        maxiter = self._max_iter_first if cold else self._max_iter
-        solved = self._solver.solve(list(xs_init), list(us_init), maxiter, False)
-        return MPCSolution(
-            xs=[np.asarray(x) for x in self._solver.xs],
-            us=[np.asarray(u) for u in self._solver.us],
-            cost=self._solver.cost,
-            solved=solved,
-            info={"iter": self._solver.iter},
-        )
+        candidates = []
+        if us_init is not None:
+            candidates.append(self._attempt(xs_init, us_init, self._max_iter))
+            if self._multistart_iter > 0:
+                cold_xs, cold_us = self._cold_init(x0)
+                candidates.append(
+                    self._attempt(cold_xs, cold_us, self._multistart_iter)
+                )
+        else:
+            cold_xs, cold_us = self._cold_init(x0)
+            candidates.append(self._attempt(cold_xs, cold_us, self._max_iter_first))
+        return min(candidates, key=lambda c: c.cost)
 
     def reset(self) -> None:
         super().reset()

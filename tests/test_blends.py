@@ -57,3 +57,25 @@ def test_expert_dataset_shapes():
         env, make_mpc(horizon=20), obs_to_state, episodes=1, seed=0
     )
     assert obs.shape == (200, 3) and us.shape == (200, 1) and rets.shape == (1,)
+
+
+def test_symmetry_breaking_cold_init_escapes_hanging_start():
+    """Regression: a near-hanging start (seed 101, theta0 ~ 160 deg) is a
+    stationary point of the OCP; with a zero cold init the solver 'converges'
+    to doing nothing and warm-start shifting locks that in for the whole
+    episode. A small nonzero cold-init control must escape it."""
+    from blendmpc.envs.pendulum import angle_normalize
+
+    env = gym.make("Pendulum-v1")
+    mpc = CrocoddylMPC(
+        lambda x0: make_pendulum_problem(x0, horizon=30),
+        max_iter=5,
+        max_iter_first=300,
+        u_init=np.array([0.2]),
+    )
+    obs, _ = env.reset(seed=101)
+    done = False
+    while not done:
+        obs, _, term, trunc, _ = env.step(mpc.action(obs_to_state(obs)))
+        done = term or trunc
+    assert abs(angle_normalize(np.arctan2(obs[1], obs[0]))) < 0.2

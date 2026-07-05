@@ -46,7 +46,7 @@ class ResidualMPCEnv(gym.Wrapper):
         self._high = np.asarray(env.action_space.high, dtype=float)
         self._scale = residual_scale * 0.5 * (self._high - self._low)
         self.action_space = gym.spaces.Box(
-            low=-1.0, high=1.0, shape=env.action_space.shape, dtype=np.float64
+            low=-1.0, high=1.0, shape=env.action_space.shape, dtype=np.float32
         )
         self._last_obs: np.ndarray | None = None
 
