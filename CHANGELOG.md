@@ -22,6 +22,15 @@ All notable changes to this project are documented here. The format follows
   receding-horizon operation.
 - `benchmark/residual_pendulum/`: residual SAC vs from-scratch SAC vs MPC
   under 40% mass mismatch, with the README learning-curve figure.
+- acados backend (`AcadosMPC`) with the same warm-start and
+  symmetry-breaking cold-init semantics as the Crocoddyl backend;
+  `reset()` keeps the compiled solver. acados/CasADi twin of the pendulum
+  OCP (`blendmpc.envs.pendulum_acados`) and backend-parity tests (skipped
+  when acados is absent).
+- Documentation site (mkdocs-material): getting started, one page per
+  blend with math and paper citations, backends guide, benchmark results,
+  papers index. Built strictly in CI and deployed to GitHub Pages on push
+  to main.
 
 ### Changed
 - Pendulum model cost uses a smooth surrogate angle term (`2(1-cos)`)

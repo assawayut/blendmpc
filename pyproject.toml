@@ -22,6 +22,7 @@ classifiers = [
 [project.optional-dependencies]
 crocoddyl = ["crocoddyl>=3.0"]
 test = ["pytest"]
+docs = ["mkdocs-material"]
 
 [project.urls]
 Homepage = "https://github.com/CHANGEME/blendmpc"

@@ -9,7 +9,7 @@
 
 *Model mismatch benchmark ([reproduce it](benchmark/residual_pendulum/)): the plant is 40% heavier than the MPC's model. The residual agent starts where MPC ends and never passes through the catastrophic exploration phase that from-scratch RL pays for.*
 
-Recent robotics research keeps combining MPC and RL in the same handful of ways — yet every paper reimplements them from scratch. `blendmpc` packages these patterns as small, composable modules over [Gymnasium](https://gymnasium.farama.org/) and standard trajectory-optimization backends (currently [Crocoddyl](https://github.com/loco-3d/crocoddyl)):
+Recent robotics research keeps combining MPC and RL in the same handful of ways — yet every paper reimplements them from scratch. `blendmpc` packages these patterns as small, composable modules over [Gymnasium](https://gymnasium.farama.org/) and standard trajectory-optimization backends ([Crocoddyl](https://github.com/loco-3d/crocoddyl) and [acados](https://github.com/acados/acados)):
 
 | Blend | Pattern | Literature |
 |---|---|---|
@@ -66,7 +66,8 @@ Backends implement `solve()`; blends only see the interface. Adding an acados or
 
 - [x] v0.1 — core interface, Crocoddyl backend, 4 blends, pendulum demo + tests
 - [x] Residual SAC benchmark (Stable-Baselines3) with learning curves vs pure MPC / pure RL under model mismatch
-- [ ] acados backend
+- [x] acados backend
+- [x] Documentation site (mkdocs-material, one page per blend with the underlying papers)
 - [ ] MuJoCo quadruped task (torque-limited locomotion)
 - [ ] Benchmark table: pure MPC vs pure RL vs each blend, wall-clock and sample efficiency
 - [ ] PyPI release
