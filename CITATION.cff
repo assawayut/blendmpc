@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use blendmpc in your research, please cite it as below."
+title: "blendmpc: Composable blends of model predictive control and reinforcement learning for robotics"
+type: software
+authors:
+  - family-names: "K."
+    given-names: "Assawayut"
+version: 0.1.0.dev0
+date-released: 2026-07-05
+license: MIT
+repository-code: "https://github.com/CHANGEME/blendmpc"

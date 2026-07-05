@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional
-
-import numpy as np
+from typing import Callable
 
 import crocoddyl
+import numpy as np
 
 from ..core import MPCPolicy, MPCSolution
 
@@ -29,7 +28,7 @@ class CrocoddylMPC(MPCPolicy):
 
     def __init__(
         self,
-        problem_factory: Callable[[np.ndarray], "crocoddyl.ShootingProblem"],
+        problem_factory: Callable[[np.ndarray], crocoddyl.ShootingProblem],
         solver_cls=crocoddyl.SolverBoxFDDP,
         max_iter: int = 5,
         max_iter_first: int = 100,
@@ -45,8 +44,8 @@ class CrocoddylMPC(MPCPolicy):
     def solve(
         self,
         x0: np.ndarray,
-        us_init: Optional[List[np.ndarray]] = None,
-        xs_init: Optional[List[np.ndarray]] = None,
+        us_init: list[np.ndarray] | None = None,
+        xs_init: list[np.ndarray] | None = None,
     ) -> MPCSolution:
         x0 = np.asarray(x0, dtype=float)
         if self._problem is None:

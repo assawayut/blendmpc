@@ -12,11 +12,10 @@ speed once the prototype is validated.
 
 from __future__ import annotations
 
-from typing import Callable, Optional
-
-import numpy as np
+from typing import Callable
 
 import crocoddyl
+import numpy as np
 
 
 class _ValueTerminalModel(crocoddyl.ActionModelAbstract):
@@ -51,7 +50,7 @@ def with_learned_terminal(
     running_models,
     value_fn: Callable[[np.ndarray], float],
     scale: float = 1.0,
-) -> "crocoddyl.ShootingProblem":
+) -> crocoddyl.ShootingProblem:
     """Assemble a ShootingProblem whose terminal cost is a learned V(x)."""
     terminal = make_learned_terminal(running_models[0].state, value_fn, scale)
     return crocoddyl.ShootingProblem(

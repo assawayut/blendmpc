@@ -8,7 +8,7 @@ wrapper reproduces pure MPC, which gives RL a strong, safe starting point.
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Callable
 
 import gymnasium as gym
 import numpy as np
@@ -48,7 +48,7 @@ class ResidualMPCEnv(gym.Wrapper):
         self.action_space = gym.spaces.Box(
             low=-1.0, high=1.0, shape=env.action_space.shape, dtype=np.float64
         )
-        self._last_obs: Optional[np.ndarray] = None
+        self._last_obs: np.ndarray | None = None
 
     def reset(self, **kwargs):
         obs, info = self.env.reset(**kwargs)

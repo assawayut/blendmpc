@@ -6,10 +6,6 @@ crocoddyl = pytest.importorskip("crocoddyl")
 
 from blendmpc.blends import ResidualMPCEnv, collect_expert_dataset
 from blendmpc.envs.pendulum import (
-    DT,
-    G,
-    L,
-    M,
     make_pendulum_problem,
     obs_to_state,
 )

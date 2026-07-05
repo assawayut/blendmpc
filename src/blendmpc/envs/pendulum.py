@@ -8,9 +8,8 @@ matches the plant and closed-loop return is directly comparable to RL scores.
 
 from __future__ import annotations
 
-import numpy as np
-
 import crocoddyl
+import numpy as np
 
 G, M, L, DT = 10.0, 1.0, 1.0, 0.05
 U_MAX = 2.0
@@ -61,7 +60,9 @@ class ActionModelPendulum(crocoddyl.ActionModelAbstract):
         data.Lxu = np.zeros((2, 1))
 
 
-def make_pendulum_problem(x0: np.ndarray, horizon: int = 50) -> crocoddyl.ShootingProblem:
+def make_pendulum_problem(
+    x0: np.ndarray, horizon: int = 50
+) -> crocoddyl.ShootingProblem:
     running = ActionModelPendulum()
     terminal = ActionModelPendulum(terminal=True)
     return crocoddyl.ShootingProblem(

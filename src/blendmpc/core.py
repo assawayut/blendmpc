@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 import numpy as np
 
@@ -18,8 +17,8 @@ import numpy as np
 class MPCSolution:
     """Result of one open-loop trajectory optimization."""
 
-    xs: List[np.ndarray]
-    us: List[np.ndarray]
+    xs: list[np.ndarray]
+    us: list[np.ndarray]
     cost: float
     solved: bool
     info: dict = field(default_factory=dict)
@@ -34,14 +33,14 @@ class MPCPolicy(ABC):
     """
 
     def __init__(self) -> None:
-        self._last: Optional[MPCSolution] = None
+        self._last: MPCSolution | None = None
 
     @abstractmethod
     def solve(
         self,
         x0: np.ndarray,
-        us_init: Optional[List[np.ndarray]] = None,
-        xs_init: Optional[List[np.ndarray]] = None,
+        us_init: list[np.ndarray] | None = None,
+        xs_init: list[np.ndarray] | None = None,
     ) -> MPCSolution:
         """Solve the OCP from ``x0``, optionally warm-started."""
 
@@ -60,7 +59,7 @@ class MPCPolicy(ABC):
         self._last = None
 
     @property
-    def last_solution(self) -> Optional[MPCSolution]:
+    def last_solution(self) -> MPCSolution | None:
         return self._last
 
     def _shifted_warm_start(self, x0: np.ndarray):

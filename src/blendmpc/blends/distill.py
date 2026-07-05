@@ -7,7 +7,7 @@ drives the environment while the MPC labels the visited states).
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Tuple
+from typing import Callable
 
 import gymnasium as gym
 import numpy as np
@@ -20,9 +20,9 @@ def collect_expert_dataset(
     mpc: MPCPolicy,
     obs_to_state: Callable[[np.ndarray], np.ndarray],
     episodes: int = 10,
-    policy: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-    seed: Optional[int] = None,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    policy: Callable[[np.ndarray], np.ndarray] | None = None,
+    seed: int | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Return ``(observations, expert_actions, episode_returns)``.
 
     If ``policy`` is None the MPC's own action drives the environment

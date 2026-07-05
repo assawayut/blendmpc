@@ -9,7 +9,7 @@ work).
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional
+from typing import Callable
 
 import numpy as np
 
@@ -60,8 +60,8 @@ class PolicyWarmStartMPC(MPCPolicy):
     def solve(
         self,
         x0: np.ndarray,
-        us_init: Optional[List[np.ndarray]] = None,
-        xs_init: Optional[List[np.ndarray]] = None,
+        us_init: list[np.ndarray] | None = None,
+        xs_init: list[np.ndarray] | None = None,
     ) -> MPCSolution:
         if us_init is None or self._always:
             xs_init, us_init = self.rollout(x0)
