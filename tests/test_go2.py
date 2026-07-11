@@ -8,9 +8,12 @@ fall within a few control steps.
 import numpy as np
 import pytest
 
+# crocoddyl (with its bundled pinocchio/boost stack) must load before
+# mujoco: the reverse order segfaults on some platforms (observed on
+# GitHub's ubuntu runners with the manylinux wheels).
+pytest.importorskip("crocoddyl")
 pytest.importorskip("mujoco")
 pytest.importorskip("robot_descriptions")
-pytest.importorskip("crocoddyl")
 
 from blendmpc.envs.go2 import (
     STAND_HEIGHT,

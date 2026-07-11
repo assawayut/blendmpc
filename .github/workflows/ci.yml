@@ -65,6 +65,11 @@ jobs:
             "${{ steps.pins.outputs.menagerie }}" mujoco_menagerie unitree_go2
           fetch https://github.com/unitreerobotics/unitree_ros.git \
             "${{ steps.pins.outputs.unitree }}" unitree_ros robots/go2_description
+      - name: Import-order canary
+        run: |
+          python -c "import crocoddyl, mujoco; print('croco-then-mujoco ok')"
+          python -c "import mujoco, crocoddyl; print('mujoco-then-croco ok')" \
+            || echo "mujoco-then-crocoddyl crashes on this platform"
       - run: pytest tests/test_go2.py -q
 
   docs:
