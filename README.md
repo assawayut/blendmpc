@@ -82,7 +82,7 @@ Backends implement `solve()`; blends only see the interface. Adding an acados or
 - [x] Documentation site (mkdocs-material, one page per blend with the underlying papers)
 - [ ] MuJoCo quadruped task (torque-limited locomotion)
 - [x] Benchmark table: pure MPC vs pure RL vs each blend (see "Measured, not promised")
-- [ ] PyPI release
+- [ ] PyPI release (publish workflow ready; needs repo + trusted publishing)
 
 Contributions and issue reports are very welcome — especially additional backends and blend patterns from papers you'd like to see reusable.
 
