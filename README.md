@@ -3,6 +3,7 @@
 [![CI](https://github.com/assawayut/blendmpc/actions/workflows/ci.yml/badge.svg)](https://github.com/assawayut/blendmpc/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://github.com/assawayut/blendmpc)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-assawayut.github.io%2Fblendmpc-blue)](https://assawayut.github.io/blendmpc/)
 
 **Ready-made building blocks for combining MPC with reinforcement learning.**
 
@@ -81,7 +82,7 @@ SAC("MlpPolicy", env).learn(total_timesteps=15_000)
 | The optimizer is slow to converge or lands in bad local solutions | a policy that points the solver at the right answer | [`PolicyWarmStartMPC`](src/blendmpc/blends/warm_start.py) |
 | A good MPC that's too heavy to deploy (rate, compute, no model on-board) | a fast neural imitation of it | [`collect_expert_dataset`](src/blendmpc/blends/distill.py) |
 
-Each has a docs page with the math and the papers it implements.
+Each has a [docs page](https://assawayut.github.io/blendmpc/) with the math and the papers it implements.
 
 ## Results — including the failures
 
