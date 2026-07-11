@@ -1,17 +1,14 @@
 # blendmpc
 
-**Ready-made building blocks for combining MPC with reinforcement learning.**
-
-You have a model-based controller (MPC). You have RL. Making them work
-*together* — an RL policy correcting an MPC, a learned value function
-extending its horizon, a neural network warm-starting the solver — is one of
-the most active ideas in robot control right now. But every paper rebuilds
-the same glue code from scratch.
-
-blendmpc gives you that glue as four small, tested, benchmarked modules over
-[Gymnasium](https://gymnasium.farama.org/) and standard trajectory-optimization
-backends ([Crocoddyl](https://github.com/loco-3d/crocoddyl),
-[acados](https://github.com/acados/acados)).
+blendmpc implements four common ways of combining trajectory-optimization MPC
+with reinforcement learning: residual RL on top of an MPC controller, learned
+value functions as MPC terminal costs, warm-starting the solver with a
+learned policy, and collecting MPC rollouts to train imitation policies.
+These patterns keep showing up in robotics papers as one-off implementations;
+here they are ordinary library components that work with
+[Gymnasium](https://gymnasium.farama.org/) environments and the
+[Crocoddyl](https://github.com/loco-3d/crocoddyl) and
+[acados](https://github.com/acados/acados) solvers.
 
 ![Residual SAC vs SAC from scratch vs MPC under model mismatch](assets/residual_pendulum_light.png#only-light)
 ![Residual SAC vs SAC from scratch vs MPC under model mismatch](assets/residual_pendulum_dark.png#only-dark)
