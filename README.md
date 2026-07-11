@@ -19,8 +19,8 @@ consumes Gymnasium envs (the benchmarks use
 [Stable-Baselines3](https://github.com/DLR-RM/stable-baselines3)).
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/residual_pendulum_dark.png">
-  <img alt="Learning curves on Pendulum-v1 with 40% mass mismatch: residual SAC over MPC starts near the MPC baseline and converges to -273; SAC from scratch starts around -1450 and converges to -236." src="media/residual_pendulum_light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/residual_pendulum_dark.png">
+  <img alt="Learning curves on Pendulum-v1 with 40% mass mismatch: residual SAC over MPC starts near the MPC baseline and converges to -273; SAC from scratch starts around -1450 and converges to -236." src="docs/assets/residual_pendulum_light.png">
 </picture>
 
 *Residual SAC on Pendulum-v1 with the plant mass 40% higher than the MPC's

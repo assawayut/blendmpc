@@ -1,6 +1,6 @@
 """Backend-parity tests for AcadosMPC (skipped when acados is absent).
 
-Rule from PLAN.md: a new backend must pass the blend suite unchanged — these
+Rule from CONTRIBUTING.md: a new backend must pass the blend suite unchanged — these
 tests mirror the Crocoddyl ones over the same OCP.
 """
 

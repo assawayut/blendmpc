@@ -8,7 +8,7 @@ authority (scale 1.0): a bounded residual inherits the flawed base's ceiling
 and plateaus below from-scratch SAC (measured: -385 vs -236 at scale 0.5).
 ``oracle`` runs MPC with the true plant mass (not plotted: with a local DDP
 solver the harder true model is optimized *worse* than the optimistic nominal
-one, so it is not an upper bound; see PLAN.md).
+one, so it is not an upper bound; see the README in this directory).
 
 Each arm is evaluated on the same fixed seeds so curves are comparable.
 Results append to results/<mode>.csv as: mode,seed,step,ret0,ret1,...

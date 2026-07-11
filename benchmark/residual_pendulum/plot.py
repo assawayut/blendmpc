@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MEDIA = os.path.join(HERE, "..", "..", "media")
+MEDIA = os.path.join(HERE, "..", "..", "docs", "assets")
 
 THEMES = {
     "light": {

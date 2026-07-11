@@ -20,7 +20,7 @@ for s in 0 1 2; do
   python train.py --mode residual --seed $s
   python train.py --mode scratch  --seed $s
 done
-python plot.py   # writes media/residual_pendulum_{light,dark}.png
+python plot.py   # writes docs/assets/residual_pendulum_{light,dark}.png
 ```
 
 Each SAC run takes ~5 minutes on CPU (the MPC solves ~1k problems/second on
