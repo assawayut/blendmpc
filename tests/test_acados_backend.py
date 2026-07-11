@@ -4,11 +4,18 @@ Rule from CONTRIBUTING.md: a new backend must pass the blend suite unchanged —
 tests mirror the Crocoddyl ones over the same OCP.
 """
 
+import os
+
 import gymnasium as gym
 import numpy as np
 import pytest
 
 pytest.importorskip("acados_template")
+if not os.environ.get("ACADOS_SOURCE_DIR"):
+    pytest.skip(
+        "acados C library not configured (ACADOS_SOURCE_DIR unset)",
+        allow_module_level=True,
+    )
 
 from blendmpc.blends import ResidualMPCEnv
 from blendmpc.envs.pendulum import angle_normalize, obs_to_state
