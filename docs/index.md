@@ -10,6 +10,8 @@ here they are ordinary library components that work with
 [Crocoddyl](https://github.com/loco-3d/crocoddyl) and
 [acados](https://github.com/acados/acados) solvers.
 
+![Go2 walking under the cyclic gait MPC](assets/go2_walk.gif)
+
 ![Residual SAC vs SAC from scratch vs MPC under model mismatch](assets/residual_pendulum_light.png#only-light)
 ![Residual SAC vs SAC from scratch vs MPC under model mismatch](assets/residual_pendulum_dark.png#only-dark)
 

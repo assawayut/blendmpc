@@ -18,6 +18,12 @@ implementations; here they are ordinary library components that work with
 consumes Gymnasium envs (the benchmarks use
 [Stable-Baselines3](https://github.com/DLR-RM/stable-baselines3)).
 
+![Go2 walking under blendmpc's cyclic gait MPC](docs/assets/go2_walk.gif)
+
+*Unitree Go2 walking at 0.3 m/s under the whole-body gait MPC
+(`CrocoddylCyclicMPC` + Crocoddyl, ~3 ms per solve at 50 Hz, MuJoCo plant).
+Rendered by [benchmark/quadruped_trot/render.py](benchmark/quadruped_trot/render.py).*
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/residual_pendulum_dark.png">
   <img alt="Learning curves on Pendulum-v1 with 40% mass mismatch: residual SAC over MPC starts near the MPC baseline and converges to -273; SAC from scratch starts around -1450 and converges to -236." src="docs/assets/residual_pendulum_light.png">
