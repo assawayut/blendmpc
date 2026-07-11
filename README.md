@@ -153,6 +153,11 @@ error is contact timing, which no rigid-body parameter can fix:
 | Trot MPC, true-mass model | -11.79 |
 | Trot MPC, nominal model | -24.12 |
 
+The gait also distills ([benchmark/quadruped_distill](benchmark/quadruped_distill/)):
+a phase-conditioned MLP clone of the trot MPC keeps the full gait (identical
+airborne fraction, 5/5 survival, return within 8%) at 28 µs per action —
+142× faster, deployable at multi-kHz rates with no solver on board.
+
 Some observations from producing these, written up in the benchmark READMEs:
 
 - What looks like the solver getting stuck in a local minimum is often the
@@ -174,6 +179,12 @@ Some observations from producing these, written up in the benchmark READMEs:
   training data becomes mostly falls. And per-step rewards that are tiny
   against SAC's entropy bonus quietly pay the policy to stay noisy — scale
   training rewards before blaming the blend.
+- The pendulum's learned-terminal-cost win does not transfer to the
+  quadruped: with a gait schedule imposing the contact sequence, an 8-node
+  window trots just as well as a full-cycle one at a quarter of the solve
+  time, and the balance task is better at horizon 2 than 25. Terminal value
+  functions fix *discovered* long-horizon structure, not scheduled
+  structure.
 
 ## Related projects
 

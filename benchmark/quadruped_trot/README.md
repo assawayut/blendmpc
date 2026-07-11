@@ -55,6 +55,25 @@ at 0.3 m/s: ×2 degrades tracking cost by ~5% (and the informed model is no
 better than the nominal one there); ×2.5 is marginal (2/3 episodes survive).
 There is a regression test for the 0.3 m/s walk.
 
+## Horizon ablation (and why there is no terminal-cost benchmark here)
+
+On the pendulum, an 8-step MPC needed a learned terminal cost to avoid
+horizon myopia. Not here — shorter windows just work, because the
+long-horizon structure lives in the externally imposed contact schedule
+rather than in the OCP window:
+
+| horizon | return | FL airborne | solve |
+|---|---|---|---|
+| 32 (full cycle) | −6.2 | 22% | 3.1 ms |
+| 16 | −5.4 | 22% | 1.6 ms |
+| 8 | −4.5 | 24% | 0.9 ms |
+| 4 | −2.4 | 17% | 0.5 ms |
+
+The same holds for the balance task (H=2 outperforms H=25 at a tenth of the
+solve time). A learned terminal cost pays off when the task's payoff lies
+beyond the horizon and the solver must *discover* it — swing-up yes,
+schedule-driven gaits no. If you need rate, shrink the horizon first.
+
 ## Notes
 
 - **The gait actually steps.** The regression test asserts the front-left

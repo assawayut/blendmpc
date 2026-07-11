@@ -123,3 +123,21 @@ cannot represent, but a learned correction absorbs. Also documented in
 produces a "trot" that never lifts its feet — assert on measured contacts,
 not plans) and a double oracle inversion (the informed model is *worse* at 2×
 payload, better at 3×).
+
+## Distilling the trot MPC (Go2)
+
+A phase-conditioned MLP clone of the gait MPC (`benchmark/quadruped_distill/`):
+
+| Arm | return | survival | FL airborne | latency |
+|---|---|---|---|---|
+| Trot MPC (expert) | −6.23 | 5/5 | 22% | 4.0 ms |
+| **BC student** | −6.75 | 5/5 | 22% | **28 µs (142×)** |
+
+The student reproduces the gait itself — identical airborne fraction — not
+just the pose. Phase conditioning is essential: without it the regression
+target is multivalued and the student collapses to weight-shifting. A
+horizon ablation (in the trot benchmark README) explains why there is no
+learned-terminal-cost benchmark at robot scale: with an imposed contact
+schedule, an 8-node window trots as well as a full-cycle one, and the
+balance task is better at horizon 2 than 25 — terminal value functions fix
+*discovered* long-horizon structure, not scheduled structure.

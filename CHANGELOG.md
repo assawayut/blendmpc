@@ -63,6 +63,13 @@ All notable changes to this project are documented here. The format follows
   enter the horizon; `Go2BalanceEnv(command_vx=...)` switches the reward
   to velocity tracking. 0.2–0.3 m/s track to within a few mm/s closed
   loop; regression test included.
+- Walking demo GIF in the README (`benchmark/quadruped_trot/render.py`,
+  headless MuJoCo rendering).
+- `benchmark/quadruped_distill/`: phase-conditioned BC clone of the trot
+  MPC — full gait retained at 28 µs per action (142× faster than the
+  solver). Horizon ablations documented in the trot benchmark README:
+  scheduled gaits show no horizon myopia, so the pendulum's
+  learned-terminal-cost win does not transfer to these tasks.
 
 ### Changed
 - Pendulum model cost uses a smooth surrogate angle term (`2(1-cos)`)
