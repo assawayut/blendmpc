@@ -1,0 +1,5 @@
+arm,mean,worst,upright,iters_per_step
+plain_mpc,-319.7,-1498.4,14/15,2.04
+policy_seed_cold,-372.5,-1492.0,13/15,1.95
+policy_seed_always,-771.7,-1815.9,9/15,2.64
+policy_seed_best2,-319.7,-1498.4,14/15,2.00

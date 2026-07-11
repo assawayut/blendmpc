@@ -18,6 +18,18 @@ Recent robotics research keeps combining MPC and RL in the same handful of ways 
 | `make_learned_terminal` | a learned value function becomes the MPC terminal cost, shortening the horizon | MPC + value blending (Bhardwaj et al. '21), RLMPC |
 | `collect_expert_dataset` | MPC labels states for policy distillation / DAgger | MPC-guided policy learning |
 
+## Measured, not promised
+
+Every blend ships with a reproducible benchmark (`benchmark/`), including the
+negative results:
+
+| Blend | Benchmark | Headline result |
+|---|---|---|
+| Residual RL | [+40% mass mismatch](benchmark/residual_pendulum/) | starts at MPC level, never enters the catastrophic exploration phase; beats the mismatched MPC from ~2k steps |
+| Expert distillation | [BC from MPC](benchmark/distill_pendulum/) | 25× lower latency at modest return cost; **naive MSE-DAgger hurts** on a bang-bang expert |
+| Policy warm start | [BC-policy seeding](benchmark/warmstart_pendulum/) | rescues starts that trap plain MPC — but seeding is basin *selection*, and per-step reseeding is harmful |
+| Learned terminal cost | [short-horizon + V](benchmark/terminal_pendulum/) | **an 8-step MPC with learned V out-robusts a 30-step MPC** (15/15 vs 14/15 swing-ups, worst −790 vs −1498) |
+
 ## How is this different from `mpcrl` / `mpc4rl`?
 
 Those excellent libraries follow the Gros & Zanon programme: **MPC *is* the function approximator**, and RL tunes its parameters (Q-learning/DPG on a CasADi/acados OCP). `blendmpc` is complementary: MPC and RL stay **separate modules that compose** — an RL policy from any library (SB3, CleanRL, ...) plugs in beside a physics-based MPC, in either direction.
@@ -69,7 +81,7 @@ Backends implement `solve()`; blends only see the interface. Adding an acados or
 - [x] acados backend
 - [x] Documentation site (mkdocs-material, one page per blend with the underlying papers)
 - [ ] MuJoCo quadruped task (torque-limited locomotion)
-- [ ] Benchmark table: pure MPC vs pure RL vs each blend, wall-clock and sample efficiency
+- [x] Benchmark table: pure MPC vs pure RL vs each blend (see "Measured, not promised")
 - [ ] PyPI release
 
 Contributions and issue reports are very welcome — especially additional backends and blend patterns from papers you'd like to see reusable.

@@ -79,3 +79,65 @@ def test_symmetry_breaking_cold_init_escapes_hanging_start():
         obs, _, term, trunc, _ = env.step(mpc.action(obs_to_state(obs)))
         done = term or trunc
     assert abs(angle_normalize(np.arctan2(obs[1], obs[0]))) < 0.2
+
+
+def test_analytic_terminal_matches_numdiff():
+    """grad_fn/hess_fn path should agree with the NumDiff path on a smooth V."""
+    from blendmpc.blends.terminal_cost import with_learned_terminal
+    from blendmpc.envs.pendulum import ActionModelPendulum
+
+    def V(x):
+        return float(x @ x)
+
+    def gradV(x):
+        return 2.0 * x
+
+    def hessV(x):
+        return 2.0 * np.eye(2)
+
+    x0 = np.array([1.2, -0.4])
+    costs = {}
+    for tag, kw in (
+        ("numdiff", {}),
+        ("analytic", {"grad_fn": gradV, "hess_fn": hessV}),
+    ):
+        mpc = CrocoddylMPC(
+            lambda x0, kw=kw: with_learned_terminal(
+                x0, [ActionModelPendulum()] * 8, V, **kw
+            ),
+            max_iter_first=100,
+        )
+        costs[tag] = mpc.solve(x0).cost
+    assert np.isfinite(costs["analytic"])
+    assert abs(costs["analytic"] - costs["numdiff"]) < 1e-3 * max(
+        1.0, abs(costs["numdiff"])
+    )
+
+
+def test_warm_start_compare_with_default_never_worse():
+    """Best-of-two cold start must not be worse than either init alone."""
+    from blendmpc.blends import PolicyWarmStartMPC
+    from blendmpc.envs.pendulum import DT, G, L, M
+
+    def bad_policy(x):
+        return np.array([2.0])  # deliberately poor constant seed
+
+    def dyn(x, u):
+        th, thdot = x
+        newthdot = thdot + (1.5 * G / L * np.sin(th) + 3.0 / (M * L**2) * u[0]) * DT
+        return np.array([th + newthdot * DT, newthdot])
+
+    x0 = np.array([2.5, 0.0])
+    factory = lambda x0: make_pendulum_problem(x0, horizon=20)  # noqa: E731
+    plain = CrocoddylMPC(factory).solve(x0).cost
+    seeded = (
+        PolicyWarmStartMPC(CrocoddylMPC(factory), bad_policy, dyn, 20).solve(x0).cost
+    )
+    best2 = (
+        PolicyWarmStartMPC(
+            CrocoddylMPC(factory), bad_policy, dyn, 20, compare_with_default=True
+        )
+        .solve(x0)
+        .cost
+    )
+    assert best2 <= min(plain, seeded) + 1e-6

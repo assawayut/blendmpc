@@ -31,6 +31,16 @@ All notable changes to this project are documented here. The format follows
   blend with math and paper citations, backends guide, benchmark results,
   papers index. Built strictly in CI and deployed to GitHub Pages on push
   to main.
+- Benchmarks for the remaining blends (each with honest negative results
+  documented in its README): distillation (`benchmark/distill_pendulum/`),
+  policy warm start (`benchmark/warmstart_pendulum/`), learned terminal
+  cost (`benchmark/terminal_pendulum/`).
+- `PolicyWarmStartMPC`: `compare_with_default` option — best-of-two cold
+  starts (policy seed vs the wrapped MPC's own init), keeping the
+  lower-cost solution.
+- `make_learned_terminal` / `with_learned_terminal`: optional analytic
+  `grad_fn`/`hess_fn` (e.g. torch autograd) — finite differences on a
+  float32 network produce unusable Hessians.
 
 ### Changed
 - Pendulum model cost uses a smooth surrogate angle term (`2(1-cos)`)

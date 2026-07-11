@@ -31,7 +31,16 @@ class PolicyWarmStartMPC(MPCPolicy):
         Number of running nodes in the wrapped MPC's problem.
     always:
         If True, re-seed from the policy on *every* solve instead of only on
-        cold starts (useful when the policy is stronger than shift-and-repeat).
+        cold starts. Use with care: constantly replacing the shifted plan
+        discards the solver's refinements and empirically degrades closed-loop
+        performance; prefer the default cold-start-only seeding.
+    compare_with_default:
+        If True, a cold solve is attempted from *both* the policy rollout and
+        the wrapped MPC's own default init, keeping the lower-cost solution.
+        A learned seed changes which local basin the solver lands in — it can
+        rescue starts the default init misses *and* lose ones it handled;
+        best-of-two at the (once-per-episode) cold solve keeps the union of
+        their successes without the per-step plan-switching pathology.
     """
 
     def __init__(
@@ -41,6 +50,7 @@ class PolicyWarmStartMPC(MPCPolicy):
         dynamics: Callable[[np.ndarray, np.ndarray], np.ndarray],
         horizon: int,
         always: bool = False,
+        compare_with_default: bool = False,
     ) -> None:
         super().__init__()
         self.mpc = mpc
@@ -48,6 +58,7 @@ class PolicyWarmStartMPC(MPCPolicy):
         self._dynamics = dynamics
         self._horizon = horizon
         self._always = always
+        self._compare = compare_with_default
 
     def rollout(self, x0: np.ndarray):
         xs, us = [np.asarray(x0, dtype=float)], []
@@ -63,9 +74,15 @@ class PolicyWarmStartMPC(MPCPolicy):
         us_init: list[np.ndarray] | None = None,
         xs_init: list[np.ndarray] | None = None,
     ) -> MPCSolution:
-        if us_init is None or self._always:
+        cold = us_init is None
+        if cold or self._always:
             xs_init, us_init = self.rollout(x0)
-        return self.mpc.solve(x0, us_init=us_init, xs_init=xs_init)
+        seeded = self.mpc.solve(x0, us_init=us_init, xs_init=xs_init)
+        if cold and self._compare:
+            default = self.mpc.solve(x0)  # wrapped MPC's own cold init
+            if default.cost < seeded.cost:
+                return default
+        return seeded
 
     def reset(self) -> None:
         super().reset()
