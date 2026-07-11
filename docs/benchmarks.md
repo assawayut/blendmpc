@@ -23,7 +23,7 @@ mismatched MPC from ~2k steps on**.
 Reproduce with `benchmark/residual_pendulum/` (about 5 CPU-minutes per arm);
 full configuration and honest caveats — including why there is *no oracle
 line* and why residual authority matters — in
-[that directory's README](https://github.com/CHANGEME/blendmpc/tree/main/benchmark/residual_pendulum).
+[that directory's README](https://github.com/assawayut/blendmpc/tree/main/benchmark/residual_pendulum).
 
 ## Expert distillation
 

@@ -25,7 +25,7 @@ test = ["pytest"]
 docs = ["mkdocs-material"]
 
 [project.urls]
-Homepage = "https://github.com/CHANGEME/blendmpc"
+Homepage = "https://github.com/assawayut/blendmpc"
 
 [tool.setuptools.packages.find]
 where = ["src"]

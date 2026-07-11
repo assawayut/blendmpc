@@ -1,6 +1,6 @@
 site_name: blendmpc
 site_description: Composable blends of model predictive control and reinforcement learning for robotics
-repo_url: https://github.com/CHANGEME/blendmpc
+repo_url: https://github.com/assawayut/blendmpc
 repo_name: blendmpc
 
 theme:

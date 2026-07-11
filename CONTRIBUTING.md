@@ -20,7 +20,7 @@ is a great time to shape it.
 ## Development setup
 
 ```bash
-git clone https://github.com/CHANGEME/blendmpc && cd blendmpc
+git clone https://github.com/assawayut/blendmpc && cd blendmpc
 pip install -e ".[crocoddyl,test]"
 pre-commit install
 pytest
