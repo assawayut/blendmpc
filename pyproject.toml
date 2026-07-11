@@ -20,7 +20,10 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-crocoddyl = ["crocoddyl>=3.0"]
+# pin (pinocchio) is capped because the crocoddyl 3.2.x wheels segfault on
+# multibody problems with pinocchio 4.1 (ABI skew in the cmeel wheels);
+# revisit when a crocoddyl release built against 4.1 is out.
+crocoddyl = ["crocoddyl>=3.0", "pin<4.1"]
 test = ["pytest"]
 docs = ["mkdocs-material"]
 quadruped = ["mujoco", "robot_descriptions"]

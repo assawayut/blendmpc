@@ -72,6 +72,9 @@ All notable changes to this project are documented here. The format follows
   learned-terminal-cost win does not transfer to these tasks.
 
 ### Changed
+- The `crocoddyl` extra caps `pin<4.1`: crocoddyl 3.2.x wheels segfault on
+  multibody problems with pinocchio 4.1 (wheel ABI skew, found via the
+  quadruped CI job).
 - Pendulum model cost uses a smooth surrogate angle term (`2(1-cos)`)
   instead of Gym's kinked normalized angle, which breaks gradient-based OC
   at the hanging position (closed-loop scores are still Gym's reward).
