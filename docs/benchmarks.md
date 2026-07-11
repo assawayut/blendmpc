@@ -73,3 +73,30 @@ helps *only* as a replacement for the missing tail (at H=30 it adds bias, not
 information). Implementation traps (cost-unit consistency, float32
 finite-difference Hessians, stationary targets, input normalization) are
 documented in `benchmark/terminal_pendulum/`.
+
+## Quadruped balance under payload mismatch (Go2)
+
+The residual pattern at robot scale: whole-body Crocoddyl MPC (four feet in
+rigid contact, 37-dimensional state, 12 torques, ~3 ms per solve at 50 Hz) on
+the MuJoCo menagerie Go2 whose trunk mass is doubled — about the rated
+payload, unmodeled.
+
+![Go2 payload benchmark](assets/quadruped_balance_light.png#only-light)
+![Go2 payload benchmark](assets/quadruped_balance_dark.png#only-dark)
+
+| Arm | return |
+|---|---|
+| MPC, true-mass model (oracle) | −2.49 |
+| **Residual SAC over nominal MPC** | **−3.50** (best seed −2.69) |
+| MPC, nominal model | −5.67 |
+| SAC from scratch | −12.79 (starts at −92) |
+
+Two findings that differ from the pendulum, documented in
+`benchmark/quadruped_balance/`: residual authority is a *stability hazard* on
+a platform with unrecoverable states (0.3 authority collapsed evaluation to
+−149 before recovering; 0.1 works), and per-step rewards that are small
+against SAC's entropy bonus quietly pay the policy to stay noisy — training
+rewards are scaled ×100, evaluation is not. Also: Crocoddyl's
+`ShootingProblem.quasiStatic` returned uninitialized memory for this contact
+problem; `blendmpc.envs.go2.quasi_static_torque` computes static torques
+analytically with Pinocchio instead.

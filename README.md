@@ -109,6 +109,23 @@ pendulum swing-up (higher is better; a failed swing-up is roughly -1500).
 | MPC, horizon 8 + learned V | -414, 14/15 (15/15 with a value-iteration V) |
 | BC student of the MPC | -423 at 25x lower latency (0.6 ms → 24 µs) |
 
+The same residual pattern on a real robot morphology — whole-body MPC on the
+Unitree Go2 (37-dimensional state, 12 torques, 50 Hz, ~3 ms per solve),
+carrying roughly its rated payload unmodeled
+([benchmark/quadruped_balance](benchmark/quadruped_balance/)):
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/quadruped_balance_dark.png">
+  <img alt="Go2 balance with trunk mass doubled versus the MPC's model: residual SAC starts at the nominal MPC's return of about -5.9, improves to -3.5 (best seed -2.7, near the true-model MPC's -2.5); SAC from scratch plateaus around -12.8." src="docs/assets/quadruped_balance_light.png">
+</picture>
+
+| | return |
+|---|---|
+| MPC, true-mass model | -2.49 |
+| + residual SAC, 60k steps | -3.50 (best seed -2.69) |
+| MPC, nominal model | -5.67 |
+| SAC from scratch, 60k steps | -12.79 |
+
 Some observations from producing these, written up in the benchmark READMEs:
 
 - What looks like the solver getting stuck in a local minimum is often the
@@ -125,6 +142,11 @@ Some observations from producing these, written up in the benchmark READMEs:
 - The terminal value function has to be trained in the same cost units the
   OCP uses. Fitting it to the environment's reward (differently scaled,
   kinked at the hanging angle) quietly breaks it.
+- On the quadruped, residual authority works the other way around from the
+  pendulum: large residuals let exploration noise knock the robot over and
+  training data becomes mostly falls. And per-step rewards that are tiny
+  against SAC's entropy bonus quietly pay the policy to stay noisy — scale
+  training rewards before blaming the blend.
 
 ## Related projects
 
@@ -138,7 +160,7 @@ Some observations from producing these, written up in the benchmark READMEs:
 
 ## Roadmap
 
-Planned: a MuJoCo quadruped task and a PyPI release. Contributions are
+Planned: quadruped locomotion (the balance task above is the first legged milestone) and a PyPI release. Contributions are
 welcome, in particular new solver backends and patterns from papers you want
 reusable — see [CONTRIBUTING.md](CONTRIBUTING.md).
 

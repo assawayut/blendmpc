@@ -41,6 +41,14 @@ All notable changes to this project are documented here. The format follows
 - `make_learned_terminal` / `with_learned_terminal`: optional analytic
   `grad_fn`/`hess_fn` (e.g. torch autograd) — finite differences on a
   float32 network produce unusable Hessians.
+- Unitree Go2 whole-body balance task (`blendmpc.envs.go2`, `quadruped`
+  extra): four-feet-in-contact Crocoddyl OCP, MuJoCo menagerie plant with
+  torque actuation, one shared Pinocchio-convention state representation,
+  and an analytic quasi-static torque routine (Crocoddyl's
+  `ShootingProblem.quasiStatic` returned uninitialized memory for this
+  contact problem).
+- `benchmark/quadruped_balance/`: residual SAC over whole-body MPC under a
+  doubled unmodeled trunk mass, with oracle and from-scratch arms.
 
 ### Changed
 - Pendulum model cost uses a smooth surrogate angle term (`2(1-cos)`)

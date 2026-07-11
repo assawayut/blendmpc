@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os
 
+import gymnasium as gym
 import numpy as np
 
 FEET = ["FL_foot", "FR_foot", "RL_foot", "RR_foot"]
@@ -47,12 +48,29 @@ def stand_state():
     return np.concatenate([q, np.zeros(model.nv)])
 
 
-def make_go2_balance_problem(x0: np.ndarray, horizon: int = 25, dt: float = CONTROL_DT):
-    """Whole-body balance ShootingProblem: four feet in contact, track stand."""
+def make_go2_balance_problem(
+    x0: np.ndarray,
+    horizon: int = 25,
+    dt: float = CONTROL_DT,
+    trunk_mass_scale: float = 1.0,
+):
+    """Whole-body balance ShootingProblem: four feet in contact, track stand.
+
+    ``trunk_mass_scale`` scales the base-link inertia in the *model* — pass
+    the plant's value to build an informed ("oracle") controller.
+    """
     import crocoddyl
     import pinocchio as pin
 
     model = load_go2_pinocchio().model
+    if trunk_mass_scale != 1.0:
+        model = model.copy()
+        inert = model.inertias[1]  # base link, attached to the free-flyer
+        model.inertias[1] = pin.Inertia(
+            inert.mass * trunk_mass_scale,
+            inert.lever,
+            inert.inertia * trunk_mass_scale,
+        )
     x_stand = stand_state()
 
     data = model.createData()
@@ -129,12 +147,36 @@ def make_go2_balance_problem(x0: np.ndarray, horizon: int = 25, dt: float = CONT
 
 
 def quasi_static_torque(x0: np.ndarray) -> np.ndarray:
-    """Gravity-compensating joint torques at ``x0`` (cold-start init for MPC)."""
-    problem = make_go2_balance_problem(x0, horizon=1)
-    return problem.quasiStatic([np.asarray(x0, dtype=float)])[0]
+    """Gravity-compensating joint torques at ``x0`` (cold-start init for MPC).
+
+    Computed directly with Pinocchio (static equilibrium with least-norm
+    contact forces at the four feet) rather than Crocoddyl's
+    ``ShootingProblem.quasiStatic``, which we observed returning
+    uninitialized memory for contact problems on some runs.
+    """
+    import pinocchio as pin
+
+    model = load_go2_pinocchio().model
+    data = model.createData()
+    q = np.asarray(x0, dtype=float)[: model.nq]
+    g = pin.computeGeneralizedGravity(model, data, q)
+    pin.computeJointJacobians(model, data, q)
+    pin.updateFramePlacements(model, data)
+    Jc = np.vstack(
+        [
+            pin.getFrameJacobian(
+                model, data, model.getFrameId(f), pin.LOCAL_WORLD_ALIGNED
+            )[:3]
+            for f in FEET
+        ]
+    )  # (12, nv)
+    # Static equilibrium: [0; tau] + Jc^T f = g. The 6 unactuated base rows
+    # determine f (least-norm); the joint rows then give tau.
+    f = np.linalg.lstsq(Jc[:, :6].T, g[:6], rcond=None)[0]
+    return g[6:] - Jc[:, 6:].T @ f
 
 
-class Go2BalanceEnv:
+class Go2BalanceEnv(gym.Env):
     """MuJoCo Go2 balance environment (Gymnasium API).
 
     Action: 12 joint torques (N·m), clipped to actuator limits.
@@ -146,7 +188,6 @@ class Go2BalanceEnv:
     metadata = {"render_modes": []}
 
     def __init__(self, trunk_mass_scale: float = 1.0, max_steps: int = 500):
-        import gymnasium as gym
         import mujoco
         from robot_descriptions import go2_mj_description
 
@@ -157,7 +198,9 @@ class Go2BalanceEnv:
         self.data = mujoco.MjData(self.model)
         self._mujoco = mujoco
         trunk = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "base")
+        assert trunk >= 0
         self.model.body_mass[trunk] *= trunk_mass_scale
+        self.model.body_inertia[trunk] *= trunk_mass_scale
         self._frame_skip = max(1, round(CONTROL_DT / self.model.opt.timestep))
         self._max_steps = max_steps
         self._key = self.model.key("home").id
