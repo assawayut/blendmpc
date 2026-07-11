@@ -84,3 +84,26 @@ def test_trot_in_place_steps_and_survives():
         )
     assert not terminated
     assert airborne / steps > 0.10
+
+
+def test_forward_trot_tracks_commanded_velocity():
+    """Forward trot at 0.3 m/s: no fall, speed within 5 cm/s, stays on line."""
+    from blendmpc.envs.go2 import make_go2_trot_cycle
+    from blendmpc.solvers.crocoddyl import CrocoddylCyclicMPC
+
+    env = Go2BalanceEnv(command_vx=0.3, max_steps=400)
+    mpc = CrocoddylCyclicMPC(
+        lambda x0: make_go2_trot_cycle(vx=0.3),
+        u_init=quasi_static_torque(stand_state()),
+    )
+    obs, _ = env.reset(seed=0)
+    mpc.reset()
+    done, terminated, steps = False, False, 0
+    while not done:
+        obs, _, terminated, truncated, _ = env.step(mpc.action(obs_to_state(obs)))
+        done = terminated or truncated
+        steps += 1
+    assert not terminated
+    mean_vx = float(obs[0]) / (steps * 0.02)
+    assert abs(mean_vx - 0.3) < 0.05
+    assert abs(float(obs[1])) < 0.1

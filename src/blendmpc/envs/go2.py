@@ -188,16 +188,31 @@ def make_go2_trot_cycle(
     swing: int = 12,
     apex: float = 0.06,
     swing_weight: float = 1e3,
+    vx: float = 0.0,
 ):
-    """One trot-in-place gait cycle as a list of node models, plus a terminal.
+    """One trot gait cycle as a list of node models, plus a terminal.
 
     Cycle layout (dt = ``CONTROL_DT``): ``double_support`` all-feet nodes,
     ``swing`` nodes with the FL+RR pair tracking a sine-apex swing reference,
-    then the same again for FR+RL. Footholds are the nominal stance
-    positions, so no footstep planning or reference updates are needed —
-    intended for use with :class:`blendmpc.solvers.crocoddyl.CrocoddylCyclicMPC`.
+    then the same again for FR+RL. Intended for
+    :class:`blendmpc.solvers.crocoddyl.CrocoddylCyclicMPC`.
+
+    With ``vx == 0`` (trot in place) references are static and the return
+    value is ``(cycle, terminal)``. With ``vx > 0`` the return value is
+    ``(cycle, terminal, update_fn)``: swing targets follow a foothold
+    schedule with stride ``vx * T_cycle`` (each foot placed so it sits at
+    its nominal offset at mid-stance), the base reference advances at
+    ``vx``, and ``update_fn(model, node_index, terminal=False)`` stamps a
+    node with the references for its absolute time. Stance contact
+    references are not updated — the contact models use velocity-level
+    Baumgarte stabilization (position gain 0), so foothold positions enter
+    only through the swing costs.
     """
+    import pinocchio as pin
+
     ctx = _Go2OcpContext(trunk_mass_scale)
+    n_cycle = 2 * (double_support + swing)
+    t_cycle = n_cycle * CONTROL_DT
 
     def swing_ref(f, s):
         ref = ctx.foot_ref[f].copy()
@@ -205,9 +220,12 @@ def make_go2_trot_cycle(
         return ref
 
     cycle = []
+    slot_info = []  # per slot: None or (pair, s, nodes_to_touchdown)
     for pair in (TROT_PAIR_A, TROT_PAIR_B):
         stance = [f for f in FEET if f not in pair]
-        cycle += [ctx.node() for _ in range(double_support)]
+        for _ in range(double_support):
+            cycle.append(ctx.node())
+            slot_info.append(None)
         for k in range(swing):
             s = (k + 0.5) / swing
             cycle.append(
@@ -217,7 +235,42 @@ def make_go2_trot_cycle(
                     swing_weight=swing_weight,
                 )
             )
-    return cycle, ctx.node(terminal=True)
+            slot_info.append((pair, s, swing - k))
+    terminal = ctx.node(terminal=True)
+    if vx == 0.0:
+        return cycle, terminal
+
+    # constant part: regulate toward the commanded body velocity
+    x_ref = ctx.x_stand.copy()
+    x_ref[ctx.model.nq] = vx
+    for am in [*cycle, terminal]:
+        am.differential.costs.costs["xreg"].cost.residual.reference = x_ref
+
+    stance_nodes = n_cycle - swing  # each foot's stance duration, in nodes
+    stride = vx * t_cycle
+
+    def update_fn(am, node_index: int, terminal: bool = False):
+        t = node_index * CONTROL_DT
+        costs = am.differential.costs.costs
+        costs["base"].cost.residual.reference = pin.SE3(
+            np.eye(3), np.array([vx * t, 0.0, STAND_HEIGHT])
+        )
+        if terminal:
+            return
+        info = slot_info[node_index % n_cycle]
+        if info is None:
+            return
+        pair, s, to_td = info
+        # foothold: nominal offset under the body at mid-stance of the
+        # upcoming stance phase; the previous foothold is one stride behind
+        t_mid_stance = t + (to_td + stance_nodes / 2.0) * CONTROL_DT
+        for f in pair:
+            x_land = ctx.foot_ref[f][0] + vx * t_mid_stance
+            ref = swing_ref(f, s)
+            ref[0] = x_land - (1.0 - s) * stride
+            costs[f"swing_{f}"].cost.residual.reference = ref
+
+    return cycle, terminal, update_fn
 
 
 def quasi_static_torque(x0: np.ndarray) -> np.ndarray:
@@ -261,9 +314,16 @@ class Go2BalanceEnv(gym.Env):
 
     metadata = {"render_modes": []}
 
-    def __init__(self, trunk_mass_scale: float = 1.0, max_steps: int = 500):
+    def __init__(
+        self,
+        trunk_mass_scale: float = 1.0,
+        max_steps: int = 500,
+        command_vx: float = 0.0,
+    ):
         import mujoco
         from robot_descriptions import go2_mj_description
+
+        self.command_vx = command_vx
 
         scene = os.path.join(os.path.dirname(go2_mj_description.MJCF_PATH), "scene.xml")
         self.model = mujoco.MjModel.from_xml_path(
@@ -331,9 +391,14 @@ class Go2BalanceEnv(gym.Env):
         import pinocchio as pin
 
         rpy = pin.rpy.matrixToRpy(pin.Quaternion(obs[3:7]).toRotationMatrix())
+        if self.command_vx == 0.0:
+            xy_err = 5.0 * (obs[0] ** 2 + obs[1] ** 2)
+        else:
+            # locomotion: track commanded forward speed, hold the lateral line
+            xy_err = 4.0 * (obs[19] - self.command_vx) ** 2 + 5.0 * obs[1] ** 2
         pose_err = (
             50.0 * (z - STAND_HEIGHT) ** 2
-            + 5.0 * (obs[0] ** 2 + obs[1] ** 2)
+            + xy_err
             + 3.0 * (rpy[0] ** 2 + rpy[1] ** 2)
             + 1.0 * rpy[2] ** 2
         )

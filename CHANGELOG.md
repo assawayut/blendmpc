@@ -57,6 +57,12 @@ All notable changes to this project are documented here. The format follows
   `benchmark/quadruped_trot/`: residual SAC over the gait MPC under a 3×
   unmodeled overload, where the learned residual ends 2× better than the
   true-model controller.
+- Forward-velocity locomotion: `make_go2_trot_cycle(vx=...)` returns a
+  per-node reference updater (foothold schedule with stride vx × cycle,
+  advancing base reference) that `CrocoddylCyclicMPC` applies as nodes
+  enter the horizon; `Go2BalanceEnv(command_vx=...)` switches the reward
+  to velocity tracking. 0.2–0.3 m/s track to within a few mm/s closed
+  loop; regression test included.
 
 ### Changed
 - Pendulum model cost uses a smooth surrogate angle term (`2(1-cos)`)

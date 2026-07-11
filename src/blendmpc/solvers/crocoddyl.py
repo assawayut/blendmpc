@@ -162,19 +162,27 @@ class CrocoddylCyclicMPC(MPCPolicy):
         x0 = np.asarray(x0, dtype=float)
         cold = us_init is None or self._problem is None
         if self._problem is None:
-            self._cycle, terminal = self._factory(x0)
+            out = self._factory(x0)
+            self._cycle, terminal = out[0], out[1]
+            self._update = out[2] if len(out) > 2 else None
+            self._terminal = terminal
             H = self._horizon or len(self._cycle)
             self._H = H
-            self._problem = crocoddyl.ShootingProblem(
-                x0, [self._cycle[k % len(self._cycle)] for k in range(H)], terminal
-            )
+            models = [self._cycle[k % len(self._cycle)] for k in range(H)]
+            if self._update is not None:
+                for k, m in enumerate(models):
+                    self._update(m, k)
+                self._update(terminal, H, terminal=True)
+            self._problem = crocoddyl.ShootingProblem(x0, models, terminal)
             self._solver = crocoddyl.SolverBoxFDDP(self._problem)
             self._phase = 0
         if not cold:
             self._phase += 1
-            self._problem.circularAppend(
-                self._cycle[(self._phase + self._H - 1) % len(self._cycle)]
-            )
+            entering = self._cycle[(self._phase + self._H - 1) % len(self._cycle)]
+            if self._update is not None:
+                self._update(entering, self._phase + self._H - 1)
+                self._update(self._terminal, self._phase + self._H, terminal=True)
+            self._problem.circularAppend(entering)
         self._problem.x0 = x0
 
         if cold:

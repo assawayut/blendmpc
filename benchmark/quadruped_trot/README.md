@@ -42,6 +42,19 @@ soft-contact effects that the rigid-contact OCP cannot represent — but a
 learned correction can absorb. For scale, −5.8 under a 3× overload matches
 the nominal gait's score under a 2× load.
 
+## Forward walking
+
+The same machinery walks: `make_go2_trot_cycle(vx=0.3)` returns an
+`update_fn` that advances the swing-foothold schedule (stride = vx × cycle)
+and the base reference through the receding horizon, and
+`CrocoddylCyclicMPC` stamps each node as it enters the window. Measured
+closed loop (no payload): 0.2 m/s and 0.3 m/s track to within a few mm/s
+with ~2 mm lateral drift over 10 s; at 0.4 m/s the gait falls — the stride
+outgrows the 0.24 s swing at these parameters. Under payload while walking
+at 0.3 m/s: ×2 degrades tracking cost by ~5% (and the informed model is no
+better than the nominal one there); ×2.5 is marginal (2/3 episodes survive).
+There is a regression test for the 0.3 m/s walk.
+
 ## Notes
 
 - **The gait actually steps.** The regression test asserts the front-left

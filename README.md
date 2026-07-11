@@ -127,8 +127,11 @@ carrying roughly its rated payload unmodeled
 | SAC from scratch, 60k steps | -12.79 |
 
 And with a gait: `CrocoddylCyclicMPC` advances a periodic contact schedule
-through the receding horizon (`ShootingProblem.circularAppend`), trotting in
-place while carrying three times its trunk mass unmodeled
+through the receding horizon (`ShootingProblem.circularAppend`); with a
+velocity command the swing-foothold schedule and base reference advance too,
+and the robot walks (0.2–0.3 m/s tracked to within a few mm/s; the envelope
+ends near 0.4 m/s). The benchmark below trots in place while carrying three
+times its trunk mass unmodeled
 ([benchmark/quadruped_trot](benchmark/quadruped_trot/)). Here the learned
 residual ends **twice as good as the true-model controller** — the remaining
 error is contact timing, which no rigid-body parameter can fix:
@@ -178,7 +181,7 @@ Some observations from producing these, written up in the benchmark READMEs:
 
 ## Roadmap
 
-Planned: forward-velocity locomotion (footstep placement on top of the cyclic gait MPC) and a PyPI release. Contributions are
+Planned: a PyPI release, faster gaits, and lateral/turning commands. Contributions are
 welcome, in particular new solver backends and patterns from papers you want
 reusable — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
