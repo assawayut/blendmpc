@@ -23,6 +23,7 @@ classifiers = [
 crocoddyl = ["crocoddyl>=3.0"]
 test = ["pytest"]
 docs = ["mkdocs-material"]
+quadruped = ["mujoco", "robot_descriptions"]
 
 [project.urls]
 Homepage = "https://github.com/assawayut/blendmpc"
