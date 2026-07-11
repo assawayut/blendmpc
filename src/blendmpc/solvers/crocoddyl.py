@@ -105,3 +105,95 @@ class CrocoddylMPC(MPCPolicy):
         super().reset()
         self._problem = None
         self._solver = None
+
+
+class CrocoddylCyclicMPC(MPCPolicy):
+    """Receding-horizon MPC over a periodic sequence of node models (gaits).
+
+    Each warm-started solve advances the schedule by one node:
+    ``ShootingProblem.circularAppend`` drops the first node and appends the
+    model for phase ``(phase + horizon) % len(cycle)``, so the horizon always
+    covers the next window of the gait. A cold solve (episode start) rebuilds
+    the problem at phase 0.
+
+    Node references are baked into the cycle models, so this covers cyclic
+    motions whose references are fixed in the world (e.g. stepping in place);
+    locomotion with moving footholds additionally needs per-step reference
+    updates.
+
+    Parameters
+    ----------
+    cycle_factory:
+        Callable ``x0 -> (cycle_models, terminal_model)``, called once at the
+        first solve (and after :meth:`reset`).
+    horizon:
+        Nodes in the receding window (default: one full cycle).
+    max_iter / max_iter_first / u_init:
+        As in :class:`CrocoddylMPC`.
+    """
+
+    def __init__(
+        self,
+        cycle_factory,
+        horizon: int | None = None,
+        max_iter: int = 3,
+        max_iter_first: int = 300,
+        u_init: np.ndarray | None = None,
+    ) -> None:
+        super().__init__()
+        self._factory = cycle_factory
+        self._horizon = horizon
+        self._max_iter = max_iter
+        self._max_iter_first = max_iter_first
+        self._u_init = u_init
+        self._problem = None
+        self._solver = None
+        self._cycle = None
+        self._phase = 0
+
+    def solve(
+        self,
+        x0: np.ndarray,
+        us_init: list[np.ndarray] | None = None,
+        xs_init: list[np.ndarray] | None = None,
+    ) -> MPCSolution:
+        import crocoddyl
+
+        x0 = np.asarray(x0, dtype=float)
+        cold = us_init is None or self._problem is None
+        if self._problem is None:
+            self._cycle, terminal = self._factory(x0)
+            H = self._horizon or len(self._cycle)
+            self._H = H
+            self._problem = crocoddyl.ShootingProblem(
+                x0, [self._cycle[k % len(self._cycle)] for k in range(H)], terminal
+            )
+            self._solver = crocoddyl.SolverBoxFDDP(self._problem)
+            self._phase = 0
+        if not cold:
+            self._phase += 1
+            self._problem.circularAppend(
+                self._cycle[(self._phase + self._H - 1) % len(self._cycle)]
+            )
+        self._problem.x0 = x0
+
+        if cold:
+            nu = self._problem.runningModels[0].nu
+            u0 = np.zeros(nu) if self._u_init is None else np.asarray(self._u_init)
+            us_init = [u0.copy() for _ in range(self._H)]
+            xs_init = [x0] * (self._H + 1)
+        maxiter = self._max_iter_first if cold else self._max_iter
+        solved = self._solver.solve(list(xs_init), list(us_init), maxiter, False)
+        return MPCSolution(
+            xs=[np.asarray(x) for x in self._solver.xs],
+            us=[np.asarray(u) for u in self._solver.us],
+            cost=self._solver.cost,
+            solved=solved,
+            info={"iter": self._solver.iter, "phase": self._phase},
+        )
+
+    def reset(self) -> None:
+        super().reset()
+        self._problem = None
+        self._solver = None
+        self._phase = 0

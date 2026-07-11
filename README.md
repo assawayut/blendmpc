@@ -126,6 +126,24 @@ carrying roughly its rated payload unmodeled
 | MPC, nominal model | -5.67 |
 | SAC from scratch, 60k steps | -12.79 |
 
+And with a gait: `CrocoddylCyclicMPC` advances a periodic contact schedule
+through the receding horizon (`ShootingProblem.circularAppend`), trotting in
+place while carrying three times its trunk mass unmodeled
+([benchmark/quadruped_trot](benchmark/quadruped_trot/)). Here the learned
+residual ends **twice as good as the true-model controller** — the remaining
+error is contact timing, which no rigid-body parameter can fix:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/quadruped_trot_dark.png">
+  <img alt="Go2 trotting in place with trunk mass tripled versus the MPC's model: residual SAC starts at the nominal gait's return of -24, passes the true-model MPC's -11.8 at about 10k steps, and converges to -5.8." src="docs/assets/quadruped_trot_light.png">
+</picture>
+
+| | return |
+|---|---|
+| + residual SAC, 60k steps | **-5.81** |
+| Trot MPC, true-mass model | -11.79 |
+| Trot MPC, nominal model | -24.12 |
+
 Some observations from producing these, written up in the benchmark READMEs:
 
 - What looks like the solver getting stuck in a local minimum is often the
@@ -160,7 +178,7 @@ Some observations from producing these, written up in the benchmark READMEs:
 
 ## Roadmap
 
-Planned: quadruped locomotion (the balance task above is the first legged milestone) and a PyPI release. Contributions are
+Planned: forward-velocity locomotion (footstep placement on top of the cyclic gait MPC) and a PyPI release. Contributions are
 welcome, in particular new solver backends and patterns from papers you want
 reusable — see [CONTRIBUTING.md](CONTRIBUTING.md).
 

@@ -49,6 +49,14 @@ All notable changes to this project are documented here. The format follows
   contact problem).
 - `benchmark/quadruped_balance/`: residual SAC over whole-body MPC under a
   doubled unmodeled trunk mass, with oracle and from-scratch arms.
+- `CrocoddylCyclicMPC`: receding-horizon MPC over a periodic sequence of
+  node models (gait schedules), advancing the cycle with
+  `ShootingProblem.circularAppend`.
+- Trot-in-place gait for Go2 (`make_go2_trot_cycle`) with a regression test
+  asserting the feet actually leave the ground, and
+  `benchmark/quadruped_trot/`: residual SAC over the gait MPC under a 3×
+  unmodeled overload, where the learned residual ends 2× better than the
+  true-model controller.
 
 ### Changed
 - Pendulum model cost uses a smooth surrogate angle term (`2(1-cos)`)

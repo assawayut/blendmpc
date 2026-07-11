@@ -48,6 +48,115 @@ def stand_state():
     return np.concatenate([q, np.zeros(model.nv)])
 
 
+class _Go2OcpContext:
+    """Shared pieces for building Go2 whole-body nodes."""
+
+    def __init__(self, trunk_mass_scale: float = 1.0):
+        import crocoddyl
+        import pinocchio as pin
+
+        model = load_go2_pinocchio().model
+        if trunk_mass_scale != 1.0:
+            model = model.copy()
+            inert = model.inertias[1]  # base link, attached to the free-flyer
+            model.inertias[1] = pin.Inertia(
+                inert.mass * trunk_mass_scale,
+                inert.lever,
+                inert.inertia * trunk_mass_scale,
+            )
+        self.model = model
+        self.x_stand = stand_state()
+        data = model.createData()
+        pin.forwardKinematics(model, data, self.x_stand[: model.nq])
+        pin.updateFramePlacements(model, data)
+        self.foot_id = {f: model.getFrameId(f) for f in FEET}
+        self.foot_ref = {f: data.oMf[self.foot_id[f]].translation.copy() for f in FEET}
+        self.base_id = model.getFrameId("base")
+        self.state = crocoddyl.StateMultibody(model)
+        self.actuation = crocoddyl.ActuationModelFloatingBase(self.state)
+        self.nu = self.actuation.nu
+        self.tau_max = model.effortLimit[6:]
+
+    def node(
+        self,
+        stance_feet=FEET,
+        swing_refs: dict | None = None,
+        terminal: bool = False,
+        dt: float = CONTROL_DT,
+        swing_weight: float = 2e2,
+    ):
+        import crocoddyl
+        import pinocchio as pin
+
+        contacts = crocoddyl.ContactModelMultiple(self.state, self.nu)
+        for f in stance_feet:
+            contacts.addContact(
+                f,
+                crocoddyl.ContactModel3D(
+                    self.state,
+                    self.foot_id[f],
+                    self.foot_ref[f],
+                    pin.ReferenceFrame.LOCAL_WORLD_ALIGNED,
+                    self.nu,
+                    np.array([0.0, 50.0]),
+                ),
+            )
+        costs = crocoddyl.CostModelSum(self.state, self.nu)
+        Mref = pin.SE3(np.eye(3), np.array([0.0, 0.0, STAND_HEIGHT]))
+        costs.addCost(
+            "base",
+            crocoddyl.CostModelResidual(
+                self.state,
+                crocoddyl.ActivationModelWeightedQuad(
+                    np.array([10.0, 10.0, 50.0, 30.0, 30.0, 10.0])
+                ),
+                crocoddyl.ResidualModelFramePlacement(
+                    self.state, self.base_id, Mref, self.nu
+                ),
+            ),
+            10.0,
+        )
+        wx = np.concatenate(
+            [np.zeros(6), 0.5 * np.ones(12), np.full(6, 2.0), 0.05 * np.ones(12)]
+        )
+        costs.addCost(
+            "xreg",
+            crocoddyl.CostModelResidual(
+                self.state,
+                crocoddyl.ActivationModelWeightedQuad(wx),
+                crocoddyl.ResidualModelState(self.state, self.x_stand, self.nu),
+            ),
+            1.0,
+        )
+        for f, ref in (swing_refs or {}).items():
+            costs.addCost(
+                f"swing_{f}",
+                crocoddyl.CostModelResidual(
+                    self.state,
+                    crocoddyl.ResidualModelFrameTranslation(
+                        self.state, self.foot_id[f], ref, self.nu
+                    ),
+                ),
+                swing_weight,
+            )
+        if not terminal:
+            costs.addCost(
+                "ureg",
+                crocoddyl.CostModelResidual(
+                    self.state, crocoddyl.ResidualModelControl(self.state, self.nu)
+                ),
+                1e-3,
+            )
+        dmodel = crocoddyl.DifferentialActionModelContactFwdDynamics(
+            self.state, self.actuation, contacts, costs, 0.0, True
+        )
+        am = crocoddyl.IntegratedActionModelEuler(dmodel, 0.0 if terminal else dt)
+        if not terminal:
+            am.u_lb = -self.tau_max
+            am.u_ub = self.tau_max
+        return am
+
+
 def make_go2_balance_problem(
     x0: np.ndarray,
     horizon: int = 25,
@@ -60,90 +169,55 @@ def make_go2_balance_problem(
     the plant's value to build an informed ("oracle") controller.
     """
     import crocoddyl
-    import pinocchio as pin
 
-    model = load_go2_pinocchio().model
-    if trunk_mass_scale != 1.0:
-        model = model.copy()
-        inert = model.inertias[1]  # base link, attached to the free-flyer
-        model.inertias[1] = pin.Inertia(
-            inert.mass * trunk_mass_scale,
-            inert.lever,
-            inert.inertia * trunk_mass_scale,
-        )
-    x_stand = stand_state()
-
-    data = model.createData()
-    q_stand = x_stand[: model.nq]
-    pin.forwardKinematics(model, data, q_stand)
-    pin.updateFramePlacements(model, data)
-    foot_ids = [model.getFrameId(f) for f in FEET]
-    foot_refs = [data.oMf[i].translation.copy() for i in foot_ids]
-    base_id = model.getFrameId("base")
-
-    state = crocoddyl.StateMultibody(model)
-    actuation = crocoddyl.ActuationModelFloatingBase(state)
-    nu = actuation.nu
-
-    def node(terminal: bool = False):
-        contacts = crocoddyl.ContactModelMultiple(state, nu)
-        for fid, ref in zip(foot_ids, foot_refs):
-            contacts.addContact(
-                model.frames[fid].name,
-                crocoddyl.ContactModel3D(
-                    state,
-                    fid,
-                    ref,
-                    pin.ReferenceFrame.LOCAL_WORLD_ALIGNED,
-                    nu,
-                    np.array([0.0, 50.0]),
-                ),
-            )
-        costs = crocoddyl.CostModelSum(state, nu)
-        Mref = pin.SE3(np.eye(3), np.array([0.0, 0.0, STAND_HEIGHT]))
-        costs.addCost(
-            "base",
-            crocoddyl.CostModelResidual(
-                state,
-                crocoddyl.ActivationModelWeightedQuad(
-                    np.array([10.0, 10.0, 50.0, 30.0, 30.0, 10.0])
-                ),
-                crocoddyl.ResidualModelFramePlacement(state, base_id, Mref, nu),
-            ),
-            10.0,
-        )
-        wx = np.concatenate(
-            [np.zeros(6), 0.5 * np.ones(12), np.full(6, 2.0), 0.05 * np.ones(12)]
-        )
-        costs.addCost(
-            "xreg",
-            crocoddyl.CostModelResidual(
-                state,
-                crocoddyl.ActivationModelWeightedQuad(wx),
-                crocoddyl.ResidualModelState(state, x_stand, nu),
-            ),
-            1.0,
-        )
-        if not terminal:
-            costs.addCost(
-                "ureg",
-                crocoddyl.CostModelResidual(
-                    state, crocoddyl.ResidualModelControl(state, nu)
-                ),
-                1e-3,
-            )
-        dmodel = crocoddyl.DifferentialActionModelContactFwdDynamics(
-            state, actuation, contacts, costs, 0.0, True
-        )
-        am = crocoddyl.IntegratedActionModelEuler(dmodel, 0.0 if terminal else dt)
-        if not terminal:
-            am.u_lb = -model.effortLimit[6:]
-            am.u_ub = model.effortLimit[6:]
-        return am
-
+    ctx = _Go2OcpContext(trunk_mass_scale)
     return crocoddyl.ShootingProblem(
-        np.asarray(x0, dtype=float), [node()] * horizon, node(terminal=True)
+        np.asarray(x0, dtype=float),
+        [ctx.node(dt=dt)] * horizon,
+        ctx.node(terminal=True),
     )
+
+
+TROT_PAIR_A = ("FL_foot", "RR_foot")
+TROT_PAIR_B = ("FR_foot", "RL_foot")
+
+
+def make_go2_trot_cycle(
+    trunk_mass_scale: float = 1.0,
+    double_support: int = 4,
+    swing: int = 12,
+    apex: float = 0.06,
+    swing_weight: float = 1e3,
+):
+    """One trot-in-place gait cycle as a list of node models, plus a terminal.
+
+    Cycle layout (dt = ``CONTROL_DT``): ``double_support`` all-feet nodes,
+    ``swing`` nodes with the FL+RR pair tracking a sine-apex swing reference,
+    then the same again for FR+RL. Footholds are the nominal stance
+    positions, so no footstep planning or reference updates are needed —
+    intended for use with :class:`blendmpc.solvers.crocoddyl.CrocoddylCyclicMPC`.
+    """
+    ctx = _Go2OcpContext(trunk_mass_scale)
+
+    def swing_ref(f, s):
+        ref = ctx.foot_ref[f].copy()
+        ref[2] += apex * np.sin(np.pi * s)
+        return ref
+
+    cycle = []
+    for pair in (TROT_PAIR_A, TROT_PAIR_B):
+        stance = [f for f in FEET if f not in pair]
+        cycle += [ctx.node() for _ in range(double_support)]
+        for k in range(swing):
+            s = (k + 0.5) / swing
+            cycle.append(
+                ctx.node(
+                    stance_feet=stance,
+                    swing_refs={f: swing_ref(f, s) for f in pair},
+                    swing_weight=swing_weight,
+                )
+            )
+    return cycle, ctx.node(terminal=True)
 
 
 def quasi_static_torque(x0: np.ndarray) -> np.ndarray:

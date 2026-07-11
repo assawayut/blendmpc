@@ -54,3 +54,33 @@ def test_mpc_balances_in_mujoco():
         done = terminated or truncated
     assert not terminated  # survived the full episode
     assert abs(obs[2] - STAND_HEIGHT) < 0.02
+
+
+def test_trot_in_place_steps_and_survives():
+    """The cyclic trot MPC must actually lift its feet (not weight-shift)
+    and keep the robot up. Airborne fraction of the FL foot is the guard:
+    the swing phase is 37.5% of the cycle; dragging feet gives ~0%."""
+    import mujoco
+
+    from blendmpc.envs.go2 import make_go2_trot_cycle
+    from blendmpc.solvers.crocoddyl import CrocoddylCyclicMPC
+
+    env = Go2BalanceEnv(max_steps=300)
+    fl = mujoco.mj_name2id(env.model, mujoco.mjtObj.mjOBJ_GEOM, "FL")
+    mpc = CrocoddylCyclicMPC(
+        lambda x0: make_go2_trot_cycle(),
+        u_init=quasi_static_torque(stand_state()),
+    )
+    obs, _ = env.reset(seed=0)
+    mpc.reset()
+    done, terminated, airborne, steps = False, False, 0, 0
+    while not done:
+        obs, _, terminated, truncated, _ = env.step(mpc.action(obs_to_state(obs)))
+        done = terminated or truncated
+        steps += 1
+        airborne += not any(
+            fl in (env.data.contact[i].geom1, env.data.contact[i].geom2)
+            for i in range(env.data.ncon)
+        )
+    assert not terminated
+    assert airborne / steps > 0.10

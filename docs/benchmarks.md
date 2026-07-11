@@ -100,3 +100,26 @@ rewards are scaled ×100, evaluation is not. Also: Crocoddyl's
 `ShootingProblem.quasiStatic` returned uninitialized memory for this contact
 problem; `blendmpc.envs.go2.quasi_static_torque` computes static torques
 analytically with Pinocchio instead.
+
+## Quadruped trot under overload (Go2)
+
+The locomotion milestone: `CrocoddylCyclicMPC` executes a trot-in-place gait
+(periodic contact schedule advanced with `circularAppend`) while the plant
+carries 3× its trunk mass unmodeled.
+
+![Go2 trot overload benchmark](assets/quadruped_trot_light.png#only-light)
+![Go2 trot overload benchmark](assets/quadruped_trot_dark.png#only-dark)
+
+| Arm | return |
+|---|---|
+| **Residual SAC over nominal trot MPC** | **−5.81** |
+| Trot MPC, true-mass model (oracle) | −11.79 |
+| Trot MPC, nominal model | −24.12 |
+
+The residual passes the true-model controller at ~10k steps: the remaining
+error is contact timing and soft-contact effects that a rigid-contact OCP
+cannot represent, but a learned correction absorbs. Also documented in
+`benchmark/quadruped_trot/`: the gait-degeneration trap (a soft swing cost
+produces a "trot" that never lifts its feet — assert on measured contacts,
+not plans) and a double oracle inversion (the informed model is *worse* at 2×
+payload, better at 3×).
