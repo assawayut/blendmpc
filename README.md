@@ -9,8 +9,10 @@ with reinforcement learning: residual RL on top of an MPC controller
 ([Johannink et al., 2019](https://arxiv.org/abs/1812.03201)), learned value
 functions as MPC terminal costs
 ([Bhardwaj et al., 2021](https://arxiv.org/abs/2012.05909)), warm-starting the
-solver with a learned policy, and collecting MPC rollouts to train imitation
-policies. These patterns keep showing up in robotics papers as one-off
+solver with a learned policy
+([Mansard et al., 2018](https://hal.science/hal-01591373)), and collecting
+MPC rollouts to train imitation policies (DAgger-style;
+[Ross et al., 2011](https://arxiv.org/abs/1011.0686)). These patterns keep showing up in robotics papers as one-off
 implementations; here they are ordinary library components that work with
 [Gymnasium](https://gymnasium.farama.org/) environments, the
 [Crocoddyl](https://github.com/loco-3d/crocoddyl) and
