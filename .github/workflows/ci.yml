@@ -30,6 +30,43 @@ jobs:
       - uses: astral-sh/ruff-action@v3
       - run: ruff format --check .
 
+  quadruped:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[crocoddyl,test,quadruped]"
+      - name: Resolve pinned description commits
+        id: pins
+        run: |
+          python - <<'EOF' >> "$GITHUB_OUTPUT"
+          from robot_descriptions._repositories import REPOSITORIES as R
+          print(f"menagerie={R['mujoco_menagerie'].commit}")
+          print(f"unitree={R['unitree_ros'].commit}")
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/robot_descriptions
+          key: go2-sparse-${{ steps.pins.outputs.menagerie }}-${{ steps.pins.outputs.unitree }}
+      - name: Sparse-fetch Go2 descriptions (only on cache miss)
+        run: |
+          set -e
+          fetch() { # url commit dir sparse_path
+            d="$HOME/.cache/robot_descriptions/$3"
+            [ -d "$d/.git" ] && return 0
+            git clone --filter=blob:none --no-checkout "$1" "$d"
+            git -C "$d" sparse-checkout set "$4"
+            git -C "$d" checkout "$2"
+          }
+          fetch https://github.com/deepmind/mujoco_menagerie.git \
+            "${{ steps.pins.outputs.menagerie }}" mujoco_menagerie unitree_go2
+          fetch https://github.com/unitreerobotics/unitree_ros.git \
+            "${{ steps.pins.outputs.unitree }}" unitree_ros robots/go2_description
+      - run: pytest tests/test_go2.py -q
+
   docs:
     runs-on: ubuntu-latest
     steps:
