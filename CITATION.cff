@@ -5,7 +5,7 @@ type: software
 authors:
   - family-names: "K."
     given-names: "Assawayut"
-version: 0.1.0.dev0
-date-released: 2026-07-05
+version: 0.2.0
+date-released: 2026-09-12
 license: MIT
 repository-code: "https://github.com/assawayut/blendmpc"

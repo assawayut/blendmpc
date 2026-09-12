@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-12
+
+First tagged release. Everything below is new.
+
 ### Added
 - `MPCPolicy` / `MPCSolution` core interface with receding-horizon
   warm-start shifting.
@@ -79,3 +83,6 @@ All notable changes to this project are documented here. The format follows
   instead of Gym's kinked normalized angle, which breaks gradient-based OC
   at the hanging position (closed-loop scores are still Gym's reward).
 - `ResidualMPCEnv` action space dtype is float32 (Gymnasium/SB3 convention).
+
+[Unreleased]: https://github.com/assawayut/blendmpc/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/assawayut/blendmpc/releases/tag/v0.2.0

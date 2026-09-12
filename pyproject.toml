@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "blendmpc"
-version = "0.1.0.dev0"
+version = "0.2.0"
 description = "Composable blends of model predictive control and reinforcement learning for robotics"
 readme = "README.md"
 license = { text = "MIT" }

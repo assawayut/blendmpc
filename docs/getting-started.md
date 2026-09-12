@@ -3,8 +3,8 @@
 ## Install
 
 ```bash
-pip install blendmpc            # not yet on PyPI — for now:
-pip install -e ".[crocoddyl,test]"
+pip install "blendmpc[crocoddyl]"             # add ,quadruped for the Go2 tasks
+pip install -e ".[crocoddyl,test]"            # from a clone, for development
 ```
 
 The Crocoddyl backend installs from PyPI wheels. The acados backend needs the

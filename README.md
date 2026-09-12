@@ -20,15 +20,15 @@ implementations; here they are ordinary library components that work with
 consumes Gymnasium envs (the benchmarks use
 [Stable-Baselines3](https://github.com/DLR-RM/stable-baselines3)).
 
-![Go2 walking under blendmpc's cyclic gait MPC](docs/assets/go2_walk.gif)
+![Go2 walking under blendmpc's cyclic gait MPC](https://raw.githubusercontent.com/assawayut/blendmpc/main/docs/assets/go2_walk.gif)
 
 *Unitree Go2 walking at 0.3 m/s under the whole-body gait MPC
 (`CrocoddylCyclicMPC` + Crocoddyl, ~3 ms per solve at 50 Hz, MuJoCo plant).
 Rendered by [benchmark/quadruped_trot/render.py](benchmark/quadruped_trot/render.py).*
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/residual_pendulum_dark.png">
-  <img alt="Learning curves on Pendulum-v1 with 40% mass mismatch: residual SAC over MPC starts near the MPC baseline and converges to -273; SAC from scratch starts around -1450 and converges to -236." src="docs/assets/residual_pendulum_light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/assawayut/blendmpc/main/docs/assets/residual_pendulum_dark.png">
+  <img alt="Learning curves on Pendulum-v1 with 40% mass mismatch: residual SAC over MPC starts near the MPC baseline and converges to -273; SAC from scratch starts around -1450 and converges to -236." src="https://raw.githubusercontent.com/assawayut/blendmpc/main/docs/assets/residual_pendulum_light.png">
 </picture>
 
 *Residual SAC on Pendulum-v1 with the plant mass 40% higher than the MPC's
@@ -38,13 +38,18 @@ crash phase of SAC from scratch. Script: [benchmark/residual_pendulum](benchmark
 ## Installation
 
 ```shell
+pip install "blendmpc[crocoddyl]"
+```
+
+Add the `quadruped` extra for the Go2 tasks (MuJoCo + robot_descriptions).
+Crocoddyl installs from wheels; the acados backend additionally needs the
+[acados C library](https://docs.acados.org/installation) and is skipped
+everywhere (tests included) when absent. For development:
+
+```shell
 git clone https://github.com/assawayut/blendmpc && cd blendmpc
 pip install -e ".[crocoddyl,test]"
 ```
-
-Not on PyPI yet. Crocoddyl installs from wheels; the acados backend
-additionally needs the [acados C library](https://docs.acados.org/installation)
-and is skipped everywhere (tests included) when absent.
 
 ## Usage
 
@@ -123,8 +128,8 @@ carrying roughly its rated payload unmodeled
 ([benchmark/quadruped_balance](benchmark/quadruped_balance/)):
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/quadruped_balance_dark.png">
-  <img alt="Go2 balance with trunk mass doubled versus the MPC's model: residual SAC starts at the nominal MPC's return of about -5.9, improves to -3.5 (best seed -2.7, near the true-model MPC's -2.5); SAC from scratch plateaus around -12.8." src="docs/assets/quadruped_balance_light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/assawayut/blendmpc/main/docs/assets/quadruped_balance_dark.png">
+  <img alt="Go2 balance with trunk mass doubled versus the MPC's model: residual SAC starts at the nominal MPC's return of about -5.9, improves to -3.5 (best seed -2.7, near the true-model MPC's -2.5); SAC from scratch plateaus around -12.8." src="https://raw.githubusercontent.com/assawayut/blendmpc/main/docs/assets/quadruped_balance_light.png">
 </picture>
 
 | | return |
@@ -145,8 +150,8 @@ residual ends **twice as good as the true-model controller** — the remaining
 error is contact timing, which no rigid-body parameter can fix:
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/quadruped_trot_dark.png">
-  <img alt="Go2 trotting in place with trunk mass tripled versus the MPC's model: residual SAC starts at the nominal gait's return of -24, passes the true-model MPC's -11.8 at about 10k steps, and converges to -5.8." src="docs/assets/quadruped_trot_light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/assawayut/blendmpc/main/docs/assets/quadruped_trot_dark.png">
+  <img alt="Go2 trotting in place with trunk mass tripled versus the MPC's model: residual SAC starts at the nominal gait's return of -24, passes the true-model MPC's -11.8 at about 10k steps, and converges to -5.8." src="https://raw.githubusercontent.com/assawayut/blendmpc/main/docs/assets/quadruped_trot_light.png">
 </picture>
 
 | | return |
